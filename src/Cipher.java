@@ -1,16 +1,17 @@
+import java.io.IOException;
+
 public class Cipher {
     private char[] alphabet;
     public Cipher(char[] alphabet) {
         this.alphabet = alphabet;
     }
-    public String encrypt(String text, int shift) {
-        String encrypt = "";
-        // Логика шифрования
-        return encrypt;
+    public static void encrypt(String text, int keyCrypto) throws IOException {
+        String originalText = FileManager.readFile(text);
+        System.out.println("Original text: " + originalText);
+
     }
     public String decrypt(String encryptedText, int shift) {
         // Логика расшифровки
-        String decrypt = "";
-        return decrypt;
+        return null;
     }
 }
