@@ -3,15 +3,16 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.stream.Stream;
 
 public class FileManager {
-    public static String readFile(String filePath) throws IOException {
-        long sizeFile = 0; //Размер изменяемого файла
-        long sizeForNIO = 20000; //Размер изменяемого файла от которого будем использовать NIO
-        String contentFile = null;
-
-
+    static long sizeFile = 0; //Размер изменяемого файла
+    static long sizeForNIO = 20000; //Размер изменяемого файла от которого будем использовать NIO
+    static String filePath;
+    static ArrayList<Character> contentFile = new ArrayList<>();
+    public static ArrayList<Character> readFile(String filePath) throws IOException {
+        FileManager.filePath = filePath;
         Path path = Paths.get(filePath);
         try {
             sizeFile = Files.size(path);
@@ -19,11 +20,11 @@ public class FileManager {
             e.printStackTrace();
         }
         if (sizeFile < sizeForNIO) {
-            System.out.println("Маленький файл");
-            contentFile = readFileIO(filePath);
+            System.out.println("Читаем маленький файл");
+            readFileIO(filePath);
         } else {
-            System.out.println("Большой файл");
-            contentFile = readFileNIO(filePath);
+            System.out.println("Читаем большой файл");
+            readFileNIO(filePath);
         }
         return contentFile;
 
@@ -33,9 +34,9 @@ public class FileManager {
         StringBuilder sb = new StringBuilder();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line).append(System.lineSeparator());
+            int charNumber;
+            while ((charNumber = br.read()) != -1) {
+                contentFile.add((char) charNumber);
             }
 
         } catch (IOException e) {
@@ -58,7 +59,27 @@ public class FileManager {
     }
 
 
-    public void writeFile(String content, String filePath) {
-        // Логика записи файла
+    public static void writeFile(ArrayList<Character> contentFile) throws IOException {
+        if (contentFile.size() < sizeForNIO / 2) { //Определяем размер будующего файла для выбора варианта записи
+            System.out.println("Сохраняем маленький файл");
+            writeFileIO(contentFile);
+        } else {
+            System.out.println("Сохранчем большой файл");
+            writeFileNIO(contentFile);
+        }
+    }
+
+    public static void writeFileIO(ArrayList<Character> contentFile) throws IOException {
+       try(BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+           for (char ch : contentFile) {
+               bw.write(ch);
+           }
+       }catch (IOException e){
+           e.printStackTrace();
+       }
+    }
+
+    public static void writeFileNIO(ArrayList<Character> contentFile) throws IOException {
+
     }
 }
