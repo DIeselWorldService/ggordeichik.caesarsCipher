@@ -10,8 +10,9 @@ public class FileManager {
     static long sizeFile = 0; //Размер изменяемого файла
     static long sizeForNIO = 20000; //Размер изменяемого файла от которого будем использовать NIO
     static String filePath;
-    static ArrayList<Character> contentFile = new ArrayList<>();
+
     public static ArrayList<Character> readFile(String filePath) throws IOException {
+        ArrayList<Character> contentFile = new ArrayList<>();
         FileManager.filePath = filePath;
         Path path = Paths.get(filePath);
         try {
@@ -31,6 +32,7 @@ public class FileManager {
     }
 
     public static String readFileIO(String filePath) throws IOException {
+        ArrayList<Character> contentFile = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
@@ -46,11 +48,14 @@ public class FileManager {
     }
 
     public static String readFileNIO(String filePath) throws IOException {
+        ArrayList<Character> contentFile = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         try (Stream<String> lines = Files.lines(Paths.get(filePath))) {
             lines.forEach(line -> {
-                sb.append(line);
-                sb.append("\n");
+                for (char c : line.toCharArray()) {
+                    contentFile.add(c);
+                }
+                contentFile.add('\n');
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -80,6 +85,7 @@ public class FileManager {
     }
 
     public static void writeFileNIO(ArrayList<Character> contentFile) throws IOException {
+
 
     }
 }

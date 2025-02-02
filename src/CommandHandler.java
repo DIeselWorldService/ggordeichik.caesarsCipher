@@ -37,7 +37,7 @@ public class CommandHandler {
 
     }
 
-    public static void handlerDecrypt() {
+    public static void handlerDecrypt() throws IOException {
         String filePath;
         int encryptionKey = 0;
         System.out.println("Введите адрес текстового файла для дешифрования.");
@@ -62,6 +62,8 @@ public class CommandHandler {
         ScannerUtil.getScanner().nextLine(); //Устраняю остаток строки \n оставшийся от nextInt
 
         System.out.println("Вы ввели адрес:\n" + filePath + "\nВы ввели ключь шифрования:\n" + encryptionKey);
+
+        Cipher.decrypt(filePath, encryptionKey);
     }
 
     public static void bruteForce() {

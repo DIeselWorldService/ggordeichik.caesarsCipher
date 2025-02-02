@@ -1,3 +1,4 @@
+import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,23 +21,40 @@ public class Cipher {
             ' ', '\t', '\n', '\r'
     );
 
-    public static void encrypt(String text, int keyCrypto) throws IOException {
+    public static void encrypt(String pathFile, int keyEncrypt) throws IOException {
 
-        ArrayList<Character> textFileOriginal = FileManager.readFile(text);
+        ArrayList<Character> originalTextFile = FileManager.readFile(pathFile);
         ArrayList<Character> encryptedTextFile = new ArrayList<>();
-        for (int i = 0; i < textFileOriginal.size() - 1; i++) {
-            int indexAlphabet = ALPHABET.indexOf(textFileOriginal.get(i)) + keyCrypto;
+
+        for (int i = 0; i < originalTextFile.size(); i++) {
+            int indexAlphabet = ALPHABET.indexOf(originalTextFile.get(i)) + keyEncrypt;
             if (indexAlphabet >= ALPHABET.size()) {
-                indexAlphabet = indexAlphabet - ALPHABET.size();
+                indexAlphabet -= ALPHABET.size();
             }
             encryptedTextFile.add(i, ALPHABET.get(indexAlphabet));
         }
 
         FileManager.writeFile(encryptedTextFile);
+        System.out.println("Зашифрованный файл сохранен по адресу: " + pathFile);
+        UserMenu.menu();
 
     }
-    public String decrypt(String encryptedText, int shift) {
-        // Логика расшифровки
-        return null;
+
+    public static void decrypt(String pathFile, int keyDecrypt) throws IOException {
+        ArrayList<Character> decryptedTextFile = FileManager.readFile(pathFile);
+        ArrayList<Character> originalTextFile = new ArrayList<>();
+
+        for (int i = 0; i < decryptedTextFile.size(); i++) {
+            int indexApphabet = ALPHABET.indexOf(decryptedTextFile.get(i)) - keyDecrypt;
+            if (indexApphabet < 0) {
+                indexApphabet += ALPHABET.size();
+            }
+            originalTextFile.add(i, ALPHABET.get(indexApphabet));
+        }
+
+        FileManager.writeFile(originalTextFile);
+        System.out.println("Расшифрованный файл сохранен по адресу: " + pathFile);
+        UserMenu.menu();
+
     }
 }
