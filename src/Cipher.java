@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Cipher {
 
-    private static final List<Character> ALPHABET = List.of(
+    static final List<Character> ALPHABET = List.of(
             // Заглавные буквы
             'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т',
             'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
@@ -21,9 +21,9 @@ public class Cipher {
             ' ', '\t', '\n', '\r'
     );
 
-    public static void encrypt(String pathFile, int keyEncrypt) throws IOException {
+    public static ArrayList<Character> encrypt(ArrayList<Character> originalText, int keyEncrypt) throws IOException {
 
-        ArrayList<Character> originalTextFile = FileManager.readFile(pathFile);
+        ArrayList<Character> originalTextFile = originalText;
         ArrayList<Character> encryptedTextFile = new ArrayList<>();
 
         for (int i = 0; i < originalTextFile.size(); i++) {
@@ -33,15 +33,12 @@ public class Cipher {
             }
             encryptedTextFile.add(i, ALPHABET.get(indexAlphabet));
         }
-
-        FileManager.writeFile(encryptedTextFile);
-        System.out.println("Зашифрованный файл сохранен по адресу: " + pathFile);
-        UserMenu.menu();
+        return encryptedTextFile;
 
     }
 
-    public static void decrypt(String pathFile, int keyDecrypt) throws IOException {
-        ArrayList<Character> decryptedTextFile = FileManager.readFile(pathFile);
+    public static ArrayList<Character> decrypt(ArrayList<Character> encryptText, int keyDecrypt) throws IOException {
+        ArrayList<Character> decryptedTextFile = encryptText;
         ArrayList<Character> originalTextFile = new ArrayList<>();
 
         for (int i = 0; i < decryptedTextFile.size(); i++) {
@@ -51,10 +48,8 @@ public class Cipher {
             }
             originalTextFile.add(i, ALPHABET.get(indexApphabet));
         }
-
-        FileManager.writeFile(originalTextFile);
-        System.out.println("Расшифрованный файл сохранен по адресу: " + pathFile);
-        UserMenu.menu();
+        System.out.println(originalTextFile.toString());
+        return originalTextFile;
 
     }
 }

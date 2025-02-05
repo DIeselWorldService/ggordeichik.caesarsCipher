@@ -5,7 +5,9 @@ import static java.nio.file.Files.isRegularFile;
 
 
 public class CommandHandler {
+    static boolean encryptFile;
     public static void handlerEncrypt() throws IOException {
+        encryptFile = true;
         String filePath;
         int keyCrypt = 0;
         System.out.println("Введите адрес текстового " +
@@ -33,13 +35,14 @@ public class CommandHandler {
         System.out.println("Вы ввели адрес:\n" + filePath + "\nВы ввели ключь шифрования:\n" + keyCrypt);
 
 
-        Cipher.encrypt(filePath, keyCrypt);
+        FileManager.readFile(filePath, keyCrypt, encryptFile);
 
     }
 
     public static void handlerDecrypt() throws IOException {
+        encryptFile = false;
         String filePath;
-        int encryptionKey = 0;
+        int keyCrypt = 0;
         System.out.println("Введите адрес текстового файла для дешифрования.");
         do{
             filePath = ScannerUtil.getScanner().nextLine();
@@ -55,15 +58,15 @@ public class CommandHandler {
                 System.out.println("Неверный формат данных! Введите целое число.");
                 ScannerUtil.getScanner().nextLine();
             } else {
-                encryptionKey = ScannerUtil.getScanner().nextInt();
+                keyCrypt = ScannerUtil.getScanner().nextInt();
             }
-        } while (encryptionKey == 0);
+        } while (keyCrypt == 0);
 
         ScannerUtil.getScanner().nextLine(); //Устраняю остаток строки \n оставшийся от nextInt
 
-        System.out.println("Вы ввели адрес:\n" + filePath + "\nВы ввели ключь шифрования:\n" + encryptionKey);
+        System.out.println("Вы ввели адрес:\n" + filePath + "\nВы ввели ключь шифрования:\n" + keyCrypt);
 
-        Cipher.decrypt(filePath, encryptionKey);
+        FileManager.readFile(filePath, keyCrypt, encryptFile);
     }
 
     public static void bruteForce() {
