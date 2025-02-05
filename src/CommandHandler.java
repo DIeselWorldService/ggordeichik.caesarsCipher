@@ -5,9 +5,7 @@ import static java.nio.file.Files.isRegularFile;
 
 
 public class CommandHandler {
-    static boolean encryptFile;
     public static void handlerEncrypt() throws IOException {
-        encryptFile = true;
         String filePath;
         int keyCrypt = 0;
         System.out.println("Введите адрес текстового " +
@@ -35,12 +33,11 @@ public class CommandHandler {
         System.out.println("Вы ввели адрес:\n" + filePath + "\nВы ввели ключь шифрования:\n" + keyCrypt);
 
 
-        FileManager.readFile(filePath, keyCrypt, encryptFile);
+        FileManager.readFile(filePath, keyCrypt);
 
     }
 
     public static void handlerDecrypt() throws IOException {
-        encryptFile = false;
         String filePath;
         int keyCrypt = 0;
         System.out.println("Введите адрес текстового файла для дешифрования.");
@@ -66,11 +63,21 @@ public class CommandHandler {
 
         System.out.println("Вы ввели адрес:\n" + filePath + "\nВы ввели ключь шифрования:\n" + keyCrypt);
 
-        FileManager.readFile(filePath, keyCrypt, encryptFile);
+        FileManager.readFile(filePath, keyCrypt);
     }
 
-    public static void bruteForce() {
-        //В процессе
+    public static void bruteForce() throws IOException {
+        String filePath;
+        System.out.println("Введите адрес текстового файла для которого требуется взлом шифра.");
+        do {
+            filePath = ScannerUtil.getScanner().nextLine();
+            if (!isRegularFile(Path.of(filePath))){
+                System.out.println("Файл не найден, попробуйте ввести адрес повторно.");
+            }
+        } while (!isRegularFile(Path.of(filePath)));
+        System.out.println("Вы ввели адрес:\n" + filePath);
+        System.out.println("Начинаю взлом шифра.");
+        BruteForce.keySelection(filePath);
     }
 
 

@@ -1,3 +1,6 @@
+import state.State;
+import state.UserState;
+
 import java.io.*;
 
 import java.nio.ByteBuffer;
@@ -6,35 +9,40 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.*;
 import java.nio.file.*;
 import java.util.ArrayList;
-import java.util.List;
 
 public class FileManager {
-    static long sizeFile = 0; //Размер изменяемого файла
-    static long sizeForNIO = 20000; //Размер изменяемого файла от которого будем использовать NIO
-    static String filePath;
-    static int keyCrypt;
-    static boolean encryptFile;
+    static long sizeFile = 0;        //Размер изменяемого файла
+    static long sizeForNIO = 25000; //Размер изменяемого файла от которого будем использовать NIO
+    static String filePath;        //Адрес файла
+    static String temporaryFilePath;
+    static int keyCrypt;          //Ключь шифрования/дешифрования
 
-    public static void readFile(String filePath, int keyCrypt, boolean encryptFile) throws IOException {
+
+    /*
+    readFile - определяем размер файла, сравнив с переменной sizeForNIO и в зависимости от размера отправляемся далее по одному из двух путей
+     */
+    public static void readFile(String filePath, int keyCrypt) throws IOException {
         FileManager.filePath = filePath;
         FileManager.keyCrypt = keyCrypt;
-        FileManager.encryptFile = encryptFile;
-
         Path path = Paths.get(filePath);
+        int lastDotIndex = filePath.lastIndexOf(".");
+        if (lastDotIndex != -1) {
+            temporaryFilePath = filePath.substring(0, lastDotIndex) + "_temporary" + filePath.substring(lastDotIndex);
+        } else {
+            temporaryFilePath = filePath + "_temporary";
+        }
         try {
             sizeFile = Files.size(path);
         } catch (IOException e) {
             e.printStackTrace();
         }
         if (sizeFile < sizeForNIO) {
-            System.out.println("Читаем маленький файл");
             readFileIO();
         } else {
-            System.out.println("Читаем большой файл");
             processFileChunked();
         }
-
     }
+
 
     public static void readFileIO() throws IOException {
         ArrayList<Character> contentFile = new ArrayList<>();
@@ -48,109 +56,61 @@ public class FileManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (encryptFile) {
-            writeFileIO(Cipher.encrypt(contentFile, keyCrypt)); //Остановился здлесь
-        } else {
+        if (UserState.getCurrentState() == State.ENCRYPTED) {
+            writeFileIO(Cipher.encrypt(contentFile, keyCrypt));
+        } else if (UserState.getCurrentState() == State.DECRYPTED) {
+            writeFileIO(Cipher.decrypt(contentFile, keyCrypt));
+        } else if (UserState.getCurrentState() == State.BRUTE_FORCED) {
+            BruteForce.decryptedTextByBruteForce(Cipher.decrypt(contentFile, keyCrypt));
+        } else if (UserState.getCurrentState() == State.BRUTE_FORCED_DECRYPTED) {
             writeFileIO(Cipher.decrypt(contentFile, keyCrypt));
         }
         UserMenu.menu();
     }
 
     public static void writeFileIO(ArrayList<Character> contentFile) throws IOException {
-       try(BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
-           for (char ch : contentFile) {
-               bw.write(ch);
-           }
-       }catch (IOException e){
-           e.printStackTrace();
-       }
-       UserMenu.menu();
-    }
-
-    /*public static void readFileNIO() throws IOException {
-        int lastDotIndex = filePath.lastIndexOf(".");
-        String temporaryFilePath = null;
-        if (lastDotIndex != -1) {
-            temporaryFilePath = filePath.substring(0, lastDotIndex) + "_temporary" + filePath.substring(lastDotIndex);
-        }
-        try (FileChannel inChannel = FileChannel.open(Paths.get(filePath), StandardOpenOption.READ);
-             FileChannel outChannel = FileChannel.open(Paths.get(temporaryFilePath),
-                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-                 List<Character> ALPHABET = Cipher.ALPHABET;
-                 //Энкодер/декодер дает возможность работать с чарами
-            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-            CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-
-            ByteBuffer byteBuffer = ByteBuffer.allocate(8192);
-
-            while (true) {
-                int bytesRead = inChannel.read(byteBuffer);
-                if (bytesRead == -1) {
-                    break;
+        if (UserState.getCurrentState() == State.ENCRYPTED || UserState.getCurrentState() == State.DECRYPTED) {
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+                for (char ch : contentFile) {
+                    bw.write(ch);
                 }
-
-                byteBuffer.flip();
-                CharBuffer charBuffer = CharBuffer.allocate(byteBuffer.remaining());
-                CoderResult result = decoder.decode(byteBuffer, charBuffer, false);
-                charBuffer.flip();
-
-                for (int i = 0; i < charBuffer.limit(); i++) {
-                    char original = charBuffer.get(i);
-                    int index = ALPHABET.indexOf(original);
-                    if (index != -1) {
-                        int newIndex;
-                        if (encryptFile) {
-                            newIndex = (index + keyCrypt) % ALPHABET.size();
-                        } else {
-                            newIndex = (index - keyCrypt + ALPHABET.size()) % ALPHABET.size();
-                        }
-                        char newChar = ALPHABET.get(newIndex);
-                        charBuffer.put(i, newChar);
-                    }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else if (UserState.getCurrentState() == State.BRUTE_FORCED_DECRYPTED) {
+            int lastDotIndex = filePath.lastIndexOf(".");
+            String newDecryptedFilePath = null;
+            if (lastDotIndex != -1) {
+                newDecryptedFilePath = filePath.substring(0, lastDotIndex) + "_decrypted" + filePath.substring(lastDotIndex);
+            }
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(newDecryptedFilePath))) {
+                for (char ch : contentFile) {
+                    bw.write(ch);
                 }
-                ByteBuffer encoderBuffer = ByteBuffer.allocate(8192);
-                encoder.encode(charBuffer, encoderBuffer, false);
-
-                encoderBuffer.flip();
-                outChannel.write(encoderBuffer);
-                byteBuffer.clear();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        }
-        try{
-            if(Files.exists(Paths.get(filePath))){
-                Files.delete(Paths.get(filePath));
-            }
-            Files.move(Paths.get(temporaryFilePath), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Создан новый файл с расшифрованным текстом: " + newDecryptedFilePath);
         }
         UserMenu.menu();
-    }*/
+    }
 
 
     public static void processFileChunked() throws IOException {
-        int lastDotIndex = filePath.lastIndexOf(".");
-        String temporaryFilePath = null;
-        if (lastDotIndex != -1) {
-            temporaryFilePath = filePath.substring(0, lastDotIndex) + "_temporary" + filePath.substring(lastDotIndex);
-        }
-
+        // Ниже создаем путь для временного файла
+        // открываем каналы на чтение/запись файлов
         try (FileChannel inChannel = FileChannel.open(Paths.get(filePath), StandardOpenOption.READ);
              FileChannel outChannel = FileChannel.open(Paths.get(temporaryFilePath),
                      StandardOpenOption.CREATE,
                      StandardOpenOption.TRUNCATE_EXISTING,
-                     StandardOpenOption.WRITE))
-        {
+                     StandardOpenOption.WRITE)) {
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
             CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-
-            ByteBuffer byteBuffer = ByteBuffer.allocate(8192);
-            CharBuffer charBuffer = CharBuffer.allocate(8192);
-            ByteBuffer encodeBuffer = ByteBuffer.allocate(8192);
-
+            ByteBuffer byteBuffer = ByteBuffer.allocate((int) sizeForNIO);
+            CharBuffer charBuffer = CharBuffer.allocate((int) sizeForNIO);
+            ByteBuffer encodeBuffer = ByteBuffer.allocate((int) sizeForNIO);
             boolean endOfInput = false;
             ByteBuffer leftoverBytes = null; // Буфер для неполных байтов
-
             while (!endOfInput) {
                 if (leftoverBytes != null) {
                     // Если есть неполные байты, добавляем их в начало нового буфера
@@ -158,18 +118,16 @@ public class FileManager {
                     byteBuffer.put(leftoverBytes);
                     leftoverBytes = null;
                 }
-
                 int bytesRead = inChannel.read(byteBuffer);
                 if (bytesRead == -1) {
                     endOfInput = true;
                 }
                 byteBuffer.flip();
-
                 CoderResult cr;
                 while (true) {
                     cr = decoder.decode(byteBuffer, charBuffer, endOfInput);
                     if (cr.isOverflow()) {
-                        processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt, encryptFile);
+                        processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt);
                         continue;
                     } else if (cr.isUnderflow()) {
                         // Проверяем, есть ли неполные байты
@@ -183,12 +141,40 @@ public class FileManager {
                         cr.throwException();
                     }
                 }
-
                 byteBuffer.compact();
             }
-
-            flushDecoder(decoder, charBuffer, encoder, encodeBuffer, outChannel, keyCrypt, encryptFile);
+            flushDecoder(decoder, charBuffer, encoder, encodeBuffer, outChannel);
             flushEncoder(encoder, encodeBuffer, outChannel);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (UserState.getCurrentState() == State.ENCRYPTED || UserState.getCurrentState() == State.DECRYPTED) {
+                // Выводим сообщение о завершении работы
+                System.out.println("Работа с файлом завершена.");
+                // Удаляем оригинальный файл
+                Files.delete(Paths.get(filePath));
+                // Переименовываем временный файл в имя оригинального файла
+                Files.move(Paths.get(temporaryFilePath), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("Оригинальный файл удален, временный файл переименован.");
+                UserMenu.menu();
+            } else if (UserState.getCurrentState() == State.BRUTE_FORCED_DECRYPTED) {
+                // Выводим сообщение о завершении работы
+                System.out.println("Работа с файлом завершена.");
+                int lastDotIndex = filePath.lastIndexOf(".");
+                String newDecryptedFilePath = null;
+                if (lastDotIndex != -1) {
+                    newDecryptedFilePath = filePath.substring(0, lastDotIndex) + "_decrypted" + filePath.substring(lastDotIndex);
+                }
+                // Переименовываем временный файл в новый файл с суффиксом _decrypted
+                Files.move(Paths.get(temporaryFilePath), Paths.get(newDecryptedFilePath), StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("Создан новый файл с расшифрованным текстом: " + newDecryptedFilePath);
+                UserMenu.menu();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Ошибка при завершении работы с файлом: " + e.getMessage());
         }
     }
 
@@ -202,14 +188,20 @@ public class FileManager {
             CharsetEncoder encoder,
             ByteBuffer encodeBuffer,
             FileChannel outChannel,
-            int keyCrypt,
-            boolean encryptFile) throws IOException {
-        System.out.println("Starting processDecodedChunkAndWrite");
+            int keyCrypt) throws IOException {
 
         // flip, чтобы перейти в режим чтения из charBuffer
         charBuffer.flip();
         // 1. Шифруем
-        encryptInCharBuffer(charBuffer, keyCrypt, encryptFile);
+        if (UserState.getCurrentState() == State.ENCRYPTED || UserState.getCurrentState() == State.DECRYPTED) {
+            Cipher.encryptInCharBuffer(charBuffer, keyCrypt);
+        } else if (UserState.getCurrentState() == State.BRUTE_FORCED) {
+            ArrayList<Character> charList = new ArrayList<>();
+            while (charBuffer.hasRemaining()) {
+                charList.add(charBuffer.get());
+            }
+            BruteForce.decryptedTextByBruteForce(Cipher.decrypt(charList, keyCrypt));
+        }
         // 2. Кодируем charBuffer -> encodeBuffer
         //    Это тоже может быть циклом, если encodeBuffer переполнится
         while (charBuffer.hasRemaining()) {
@@ -229,18 +221,15 @@ public class FileManager {
         // Возможно, encodeBuffer ещё остались байты
         writeEncoded(encodeBuffer, outChannel);
 
-        System.out.println("Finished processDecodedChunkAndWrite");
     }
 
     /** Доп. метод: "запись" encodeBuffer в файл при overflow. */
     private static void writeEncoded(ByteBuffer encodeBuffer, FileChannel outChannel) throws IOException {
-        System.out.println("Starting writeEncoded");
 
         encodeBuffer.flip();
         outChannel.write(encodeBuffer);
         encodeBuffer.clear();
 
-        System.out.println("Finished writeEncoded");
     }
 
     /** "дошифровка" хвостов, когда endOfInput=true */
@@ -248,16 +237,14 @@ public class FileManager {
                                      CharBuffer charBuffer,
                                      CharsetEncoder encoder,
                                      ByteBuffer encodeBuffer,
-                                     FileChannel outChannel,
-                                     int keyCrypt, boolean encryptFile) throws IOException {
-        System.out.println("Starting flushDecoder");
+                                     FileChannel outChannel) throws IOException {
 
         // Завершаем декодирование оставшихся данных
         while (true) {
             CoderResult cr = decoder.decode(ByteBuffer.allocate(0), charBuffer, true);
             if (cr.isOverflow()) {
                 // charBuffer переполнен, шифруем и пишем
-                processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt, encryptFile);
+                processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt);
             } else if (cr.isUnderflow()) {
                 // всё декодировано
                 break;
@@ -267,13 +254,13 @@ public class FileManager {
         }
 
         // Обрабатываем остатки в charBuffer
-        processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt, encryptFile);
+        processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt);
 
         // А теперь сам flush
         while (true) {
             CoderResult cr = decoder.flush(charBuffer);
             if (cr.isOverflow()) {
-                processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt, encryptFile);
+                processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt);
             } else if (cr.isUnderflow()) {
                 break;
             } else if (cr.isError()) {
@@ -282,16 +269,14 @@ public class FileManager {
         }
 
         // Ещё раз обрабатываем остатки в charBuffer
-        processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt, encryptFile);
+        processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt);
 
-        System.out.println("Finished flushDecoder");
     }
 
     /** Аналогичная процедура "довыжать" encoder */
     private static void flushEncoder(CharsetEncoder encoder,
                                      ByteBuffer encodeBuffer,
                                      FileChannel outChannel) throws IOException {
-        System.out.println("Starting flushEncoder");
 
         // Завершаем кодирование оставшихся данных
         while (true) {
@@ -326,29 +311,8 @@ public class FileManager {
         }
         encodeBuffer.clear();
 
-        System.out.println("Finished flushEncoder");
     }
 
-    /** Применяем ваш Caesar (или любой другой) шифр к содержимому charBuffer in-place */
-    private static void encryptInCharBuffer(CharBuffer charBuffer,
-                                            int keyCrypt,
-                                            boolean encryptFile)
-    {
-        List<Character> ALPHABET = Cipher.ALPHABET;
-        // Проходимся по символам, меняем их
-        for (int i = 0; i < charBuffer.limit(); i++) {
-            char original = charBuffer.get(i);
-            int index = ALPHABET.indexOf(original);
-            if (index != -1) {
-                int newIndex;
-                if (encryptFile) {
-                    newIndex = (index + keyCrypt) % ALPHABET.size();
-                } else {
-                    newIndex = (index - keyCrypt + ALPHABET.size()) % ALPHABET.size();
-                }
-                charBuffer.put(i, ALPHABET.get(newIndex));
-            }
-        }
-    }
+
 
 }

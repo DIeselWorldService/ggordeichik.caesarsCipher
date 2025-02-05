@@ -1,5 +1,9 @@
+import state.State;
+import state.UserState;
+
 import java.awt.*;
 import java.io.IOException;
+import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,8 +52,29 @@ public class Cipher {
             }
             originalTextFile.add(i, ALPHABET.get(indexApphabet));
         }
-        System.out.println(originalTextFile.toString());
+        //System.out.println(originalTextFile.toString());
         return originalTextFile;
 
+    }
+
+    /** Применяем ваш Caesar (или любой другой) шифр к содержимому charBuffer in-place */
+    public static void encryptInCharBuffer(CharBuffer charBuffer,
+                                            int keyCrypt)
+    {
+        List<Character> ALPHABET = Cipher.ALPHABET;
+        // Проходимся по символам, меняем их
+        for (int i = 0; i < charBuffer.limit(); i++) {
+            char original = charBuffer.get(i);
+            int index = ALPHABET.indexOf(original);
+            if (index != -1) {
+                int newIndex = 0;
+                if (UserState.getCurrentState() == State.ENCRYPTED || UserState.getCurrentState() == State.BRUTE_FORCED) {
+                    newIndex = (index + keyCrypt) % ALPHABET.size();
+                } else if (UserState.getCurrentState() == State.DECRYPTED) {
+                    newIndex = (index - keyCrypt + ALPHABET.size()) % ALPHABET.size();
+                }
+                charBuffer.put(i, ALPHABET.get(newIndex));
+            }
+        }
     }
 }
