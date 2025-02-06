@@ -148,17 +148,25 @@ public class FileManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         try {
-            if (UserState.getCurrentState() == State.ENCRYPTED || UserState.getCurrentState() == State.DECRYPTED) {
+            if (UserState.getCurrentState() == State.ENCRYPTED) {
                 // Выводим сообщение о завершении работы
                 System.out.println("Работа с файлом завершена.");
                 // Удаляем оригинальный файл
                 Files.delete(Paths.get(filePath));
                 // Переименовываем временный файл в имя оригинального файла
                 Files.move(Paths.get(temporaryFilePath), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("Оригинальный файл удален, временный файл переименован.");
+                System.out.println("Файл зашифрован.");
                 UserMenu.menu();
+            } else if (UserState.getCurrentState() == State.DECRYPTED) {
+                    // Выводим сообщение о завершении работы
+                    System.out.println("Работа с файлом завершена.");
+                    // Удаляем оригинальный файл
+                    Files.delete(Paths.get(filePath));
+                    // Переименовываем временный файл в имя оригинального файла
+                    Files.move(Paths.get(temporaryFilePath), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+                    System.out.println("Файл расшифрован.");
+                    UserMenu.menu();
             } else if (UserState.getCurrentState() == State.BRUTE_FORCED_DECRYPTED) {
                 // Выводим сообщение о завершении работы
                 System.out.println("Работа с файлом завершена.");
@@ -189,18 +197,21 @@ public class FileManager {
             ByteBuffer encodeBuffer,
             FileChannel outChannel,
             int keyCrypt) throws IOException {
-
         // flip, чтобы перейти в режим чтения из charBuffer
         charBuffer.flip();
         // 1. Шифруем
-        if (UserState.getCurrentState() == State.ENCRYPTED || UserState.getCurrentState() == State.DECRYPTED) {
+        if (UserState.getCurrentState() == State.ENCRYPTED) {
             Cipher.encryptInCharBuffer(charBuffer, keyCrypt);
+        } else if (UserState.getCurrentState() == State.DECRYPTED) {
+            Cipher.decryptInCharBuffer(charBuffer, keyCrypt);
         } else if (UserState.getCurrentState() == State.BRUTE_FORCED) {
-            ArrayList<Character> charList = new ArrayList<>();
+            ArrayList charList = new ArrayList<>();
             while (charBuffer.hasRemaining()) {
                 charList.add(charBuffer.get());
             }
             BruteForce.decryptedTextByBruteForce(Cipher.decrypt(charList, keyCrypt));
+        } else if (UserState.getCurrentState() == State.BRUTE_FORCED_DECRYPTED) {
+            Cipher.decryptInCharBuffer(charBuffer, keyCrypt);
         }
         // 2. Кодируем charBuffer -> encodeBuffer
         //    Это тоже может быть циклом, если encodeBuffer переполнится
@@ -220,7 +231,6 @@ public class FileManager {
         charBuffer.clear();
         // Возможно, encodeBuffer ещё остались байты
         writeEncoded(encodeBuffer, outChannel);
-
     }
 
     /** Доп. метод: "запись" encodeBuffer в файл при overflow. */
@@ -238,7 +248,6 @@ public class FileManager {
                                      CharsetEncoder encoder,
                                      ByteBuffer encodeBuffer,
                                      FileChannel outChannel) throws IOException {
-
         // Завершаем декодирование оставшихся данных
         while (true) {
             CoderResult cr = decoder.decode(ByteBuffer.allocate(0), charBuffer, true);
@@ -252,10 +261,8 @@ public class FileManager {
                 cr.throwException();
             }
         }
-
         // Обрабатываем остатки в charBuffer
         processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt);
-
         // А теперь сам flush
         while (true) {
             CoderResult cr = decoder.flush(charBuffer);
@@ -267,17 +274,14 @@ public class FileManager {
                 cr.throwException();
             }
         }
-
         // Ещё раз обрабатываем остатки в charBuffer
         processDecodedChunkAndWrite(charBuffer, encoder, encodeBuffer, outChannel, keyCrypt);
-
     }
 
     /** Аналогичная процедура "довыжать" encoder */
     private static void flushEncoder(CharsetEncoder encoder,
                                      ByteBuffer encodeBuffer,
                                      FileChannel outChannel) throws IOException {
-
         // Завершаем кодирование оставшихся данных
         while (true) {
             CoderResult cr = encoder.encode(CharBuffer.allocate(0), encodeBuffer, true); // Передаем пустой CharBuffer и endOfInput=true
@@ -290,7 +294,6 @@ public class FileManager {
                 cr.throwException();
             }
         }
-
         // Теперь можно безопасно вызвать flush
         while (true) {
             CoderResult cr = encoder.flush(encodeBuffer);
@@ -303,14 +306,12 @@ public class FileManager {
                 cr.throwException();
             }
         }
-
         // Записываем, если остались данные
         encodeBuffer.flip();
         if (encodeBuffer.hasRemaining()) {
             outChannel.write(encodeBuffer);
         }
         encodeBuffer.clear();
-
     }
 
 

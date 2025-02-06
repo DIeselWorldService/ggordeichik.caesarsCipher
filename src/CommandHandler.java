@@ -25,8 +25,11 @@ public class CommandHandler {
                 ScannerUtil.getScanner().nextLine();
             } else {
                 keyCrypt = ScannerUtil.getScanner().nextInt();
+                if (keyCrypt < 1 || keyCrypt > 92) {
+                    System.out.println("Нет такого пункта меню! Введите целое число [1..92].");
+                }
             }
-        } while (keyCrypt == 0);
+        } while (keyCrypt < 1 || keyCrypt > 92);
 
         ScannerUtil.getScanner().nextLine(); //Устраняю остаток строки \n оставшийся от nextInt
 
@@ -56,8 +59,11 @@ public class CommandHandler {
                 ScannerUtil.getScanner().nextLine();
             } else {
                 keyCrypt = ScannerUtil.getScanner().nextInt();
+                if (keyCrypt < 1 || keyCrypt > 92) {
+                    System.out.println("Нет такого пункта меню! Введите целое число [1..92].");
+                }
             }
-        } while (keyCrypt == 0);
+        } while (keyCrypt < 0 || keyCrypt > 92);
 
         ScannerUtil.getScanner().nextLine(); //Устраняю остаток строки \n оставшийся от nextInt
 

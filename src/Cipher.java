@@ -1,80 +1,70 @@
-import state.State;
-import state.UserState;
-
-import java.awt.*;
-import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Cipher {
-
-    static final List<Character> ALPHABET = List.of(
+    public static final List<Character> ALPHABET = List.of(
             // Заглавные буквы
             'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т',
             'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
-
             // Строчные буквы
             'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т',
             'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
-
             // Знаки препинания
             '.', ',', '!', '?', ';', ':', '—', '-', '(', ')', '[', ']', '{', '}', '"', '«', '»', '‘', '’', '“', '”', '…', '_',
-
             // Пробельные символы
             ' ', '\t', '\n', '\r'
     );
 
-    public static ArrayList<Character> encrypt(ArrayList<Character> originalText, int keyEncrypt) throws IOException {
-
-        ArrayList<Character> originalTextFile = originalText;
-        ArrayList<Character> encryptedTextFile = new ArrayList<>();
-
-        for (int i = 0; i < originalTextFile.size(); i++) {
-            int indexAlphabet = ALPHABET.indexOf(originalTextFile.get(i)) + keyEncrypt;
-            if (indexAlphabet >= ALPHABET.size()) {
-                indexAlphabet -= ALPHABET.size();
+    public static ArrayList<Character> encrypt(ArrayList<Character> contentFile, int keyCrypt) {
+        ArrayList<Character> encryptedContent = new ArrayList<>();
+        for (char ch : contentFile) {
+            int index = ALPHABET.indexOf(ch);
+            if (index != -1) {
+                int newIndex = (index + keyCrypt) % ALPHABET.size();
+                encryptedContent.add(ALPHABET.get(newIndex));
+            } else {
+                encryptedContent.add(ch);
             }
-            encryptedTextFile.add(i, ALPHABET.get(indexAlphabet));
         }
-        return encryptedTextFile;
-
+        return encryptedContent;
     }
 
-    public static ArrayList<Character> decrypt(ArrayList<Character> encryptText, int keyDecrypt) throws IOException {
-        ArrayList<Character> decryptedTextFile = encryptText;
-        ArrayList<Character> originalTextFile = new ArrayList<>();
-
-        for (int i = 0; i < decryptedTextFile.size(); i++) {
-            int indexApphabet = ALPHABET.indexOf(decryptedTextFile.get(i)) - keyDecrypt;
-            if (indexApphabet < 0) {
-                indexApphabet += ALPHABET.size();
+    public static ArrayList<Character> decrypt(ArrayList<Character> contentFile, int keyCrypt) {
+        ArrayList<Character> decryptedContent = new ArrayList<>();
+        for (char ch : contentFile) {
+            int index = ALPHABET.indexOf(ch);
+            if (index != -1) {
+                int newIndex = (index - keyCrypt + ALPHABET.size()) % ALPHABET.size();
+                decryptedContent.add(ALPHABET.get(newIndex));
+            } else {
+                decryptedContent.add(ch);
             }
-            originalTextFile.add(i, ALPHABET.get(indexApphabet));
         }
-        //System.out.println(originalTextFile.toString());
-        return originalTextFile;
-
+        return decryptedContent;
     }
 
-    /** Применяем ваш Caesar (или любой другой) шифр к содержимому charBuffer in-place */
-    public static void encryptInCharBuffer(CharBuffer charBuffer,
-                                            int keyCrypt)
-    {
-        List<Character> ALPHABET = Cipher.ALPHABET;
-        // Проходимся по символам, меняем их
+    public static void encryptInCharBuffer(CharBuffer charBuffer, int keyCrypt) {
         for (int i = 0; i < charBuffer.limit(); i++) {
             char original = charBuffer.get(i);
             int index = ALPHABET.indexOf(original);
             if (index != -1) {
-                int newIndex = 0;
-                if (UserState.getCurrentState() == State.ENCRYPTED || UserState.getCurrentState() == State.BRUTE_FORCED) {
-                    newIndex = (index + keyCrypt) % ALPHABET.size();
-                } else if (UserState.getCurrentState() == State.DECRYPTED) {
-                    newIndex = (index - keyCrypt + ALPHABET.size()) % ALPHABET.size();
-                }
+                int newIndex = (index + keyCrypt) % ALPHABET.size();
                 charBuffer.put(i, ALPHABET.get(newIndex));
             }
+            // Символы, не входящие в ALPHABET, остаются без изменений
+        }
+    }
+
+    public static void decryptInCharBuffer(CharBuffer charBuffer, int keyCrypt) {
+        for (int i = 0; i < charBuffer.limit(); i++) {
+            char original = charBuffer.get(i);
+            int index = ALPHABET.indexOf(original);
+            if (index != -1) {
+                int newIndex = (index - keyCrypt + ALPHABET.size()) % ALPHABET.size();
+                charBuffer.put(i, ALPHABET.get(newIndex));
+            }
+            // Символы, не входящие в ALPHABET, остаются без изменений
         }
     }
 }

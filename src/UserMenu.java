@@ -51,22 +51,24 @@ public class UserMenu {
         System.out.println("1 - Создать наиболее вероятную расшифрованную копию файла.");
         System.out.println("2 - Узнать номера и количество совпадений по трем наиболее вероятным ключам.");
         System.out.println("3 - Просмотреть весь список ключей по которым найдены совпадения.");
+        System.out.println("4 - Вернуться в главное меню.");
         do {
             if (!ScannerUtil.getScanner().hasNextInt()) {
-                System.out.println("Формат данных неверный. Введите целое число [1..3].");
+                System.out.println("Формат данных неверный. Введите целое число [1..4].");
                 ScannerUtil.getScanner().nextLine();
             } else {
                 numberMenu = ScannerUtil.getScanner().nextInt();
-                if (numberMenu < 0 || numberMenu > 3) {
-                    System.out.println("Нет такого пункта меню! Введите целое число [1..3].");
+                if (numberMenu < 1 || numberMenu > 4) {
+                    System.out.println("Нет такого пункта меню! Введите целое число [1..4].");
                 }
             }
-        } while (numberMenu < 1 || numberMenu > 3);
+        } while (numberMenu < 1 || numberMenu > 4);
             switch (numberMenu){
                 case 1 -> {UserState.setCurrentState(State.BRUTE_FORCED_DECRYPTED);
                     BruteForce.createdDecryptedFile(threeKey[0]);}
-                case 2 -> {BruteForce.threePossibleKeys(threeKey);}
-                case 3 -> {BruteForce.likelyKeys();}
+                case 2 -> BruteForce.threePossibleKeys(threeKey);
+                case 3 -> BruteForce.likelyKeys(threeKey);
+                case 4 -> menu();
             }
     }
 }

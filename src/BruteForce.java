@@ -9,7 +9,6 @@ public class BruteForce {
     static HashMap<Integer, Integer> coincidenceCount = new HashMap<Integer, Integer>();
     static Set<Map.Entry<Integer, Integer>> entrySetCoincidenceCount;
     static int count = 0; //Счетчик для отладки
-    static int zzzCount = 0;// отладка
 
     private static final List<String> COMMON_RUSSIAN_WORDS = Arrays.asList(
             " и ", " в ", " не ", " на ", " я ", " что ", " он ", " с ", " а ", " как ", " то ", " это ", " все ", " но ", " они ", " к ", " у ", " мы ", " за ", " вы ", " или "
@@ -116,11 +115,11 @@ public class BruteForce {
             UserMenu.menuBruteForce(threeKeys);
         }
 
-        public static void likelyKeys() throws IOException {
+        public static void likelyKeys(int[] threeKeys) throws IOException {
             for (Map.Entry<Integer, Integer> entry : entrySetCoincidenceCount){
                 System.out.println("Ключ: " + entry.getKey() + " | Количество совпадений: " + entry.getValue());
             }
-            UserMenu.menu();
+            UserMenu.menuBruteForce(threeKeys);
         }
 
     }
